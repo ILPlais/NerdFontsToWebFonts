@@ -1,0 +1,148 @@
+# .github/workflows/nerd-fonts-woff2-release.yml
+#
+# Watches the official Nerd Fonts repository for new releases, converts all
+# the fonts to WOFF2, creates one .zip and one .tar.xz archive per family,
+# then publishes a release carrying the same version number as Nerd Fonts.
+
+name: 🔣 Nerd Fonts → WOFF2
+
+on:
+  # ⏰ Check every day whether a new upstream release exists
+  schedule:
+    - cron: "0 6 * * *"
+
+  # 🖱️ Manual trigger, with the option to force a specific tag
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Nerd Fonts tag to convert (e.g. v3.5.1). Empty = latest release."
+        required: false
+        default: ""
+
+# 🔒 Minimal permissions by default; the build job raises its own
+permissions:
+  contents: read
+
+# 🚦 Prevent two simultaneous runs from creating the same release
+concurrency:
+  group: nerd-fonts-woff2
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: determine the tag to process and check it hasn't already been published
+  # ---------------------------------------------------------------------------
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      needs_release: ${{ steps.resolve.outputs.needs_release }}
+    steps:
+      - name: 🔎 Resolve the tag and check whether the release already exists
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Passed through the environment (rather than interpolated into the
+          # script) to prevent command injection via the manual input
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+
+          # Manually requested tag, otherwise the latest Nerd Fonts release
+          tag="${INPUT_TAG:-}"
+          if [ -z "$tag" ]; then
+            tag=$(gh api repos/ryanoasis/nerd-fonts/releases/latest --jq .tag_name)
+          fi
+          echo "🏷️ Targeted Nerd Fonts tag: $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          # If a release with this tag already exists in THIS repository, stop
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "⏭️ Release $tag already exists, nothing to do."
+            echo "needs_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "🆕 Release $tag doesn't exist yet: starting the conversion."
+            echo "needs_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Job 2: convert, archive, publish (only if a release needs to be created)
+  # ---------------------------------------------------------------------------
+  build:
+    needs: check
+    if: needs.check.outputs.needs_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to create the tag and the release
+    env:
+      NERD_FONTS_TAG: ${{ needs.check.outputs.tag }}
+      # Automatically read by the Python script (--github-token option) to
+      # benefit from a more comfortable API rate limit
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: 📥 Check out the repository
+        uses: actions/checkout@v7
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: 📦 Install fontTools (with WOFF2/Brotli support)
+        run: pip install "fonttools[woff]"
+
+      - name: 🔤 Download and convert all families
+        # The script is expected to be at the root of the repository
+        run: |
+          python3 download_and_convert_nerd_fonts.py \
+            --tag "$NERD_FONTS_TAG" \
+            --output-dir ./woff2
+
+      - name: 🗜️ Create the .zip and .tar.xz archives for each family
+        run: |
+          set -euo pipefail
+
+          mkdir --parents dist
+
+          # Use all available cores for xz compression
+          export XZ_OPT="--threads=0"
+
+          # One archive of each type per subfolder (= one family)
+          for family_dir in woff2/*/; do
+            family=$(basename "$family_dir")
+
+            # Skip folders without any converted font
+            if ! compgen -G "${family_dir}*.woff2" > /dev/null; then
+              echo "⚠️ No .woff2 font for $family, family skipped."
+              continue
+            fi
+
+            echo "🗜️ Archiving $family"
+
+            # .zip: we move into woff2/ so that the archive contains a
+            # root folder named after the family
+            (cd woff2 && zip --recurse-paths --quiet "../dist/${family}.zip" "$family")
+
+            # .tar.xz: same internal structure thanks to --directory
+            tar --create --xz --file "dist/${family}.tar.xz" \
+              --directory woff2 "$family"
+          done
+
+          echo "✅ $(find dist -type f | wc --lines) archive(s) created"
+
+      - name: 🚀 Publish the release
+        run: |
+          set -euo pipefail
+
+          echo "🚀 Creating release $NERD_FONTS_TAG"
+
+          # Create the tag (at the current commit) and the release, then
+          # upload all the archives from the dist/ folder
+          gh release create "$NERD_FONTS_TAG" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Nerd Fonts $NERD_FONTS_TAG (WOFF2)" \
+            --notes "Nerd Fonts $NERD_FONTS_TAG fonts converted to WOFF2. Source: https://github.com/ryanoasis/nerd-fonts/releases/tag/$NERD_FONTS_TAG"
+
+          echo "🎉 Release $NERD_FONTS_TAG published!"
