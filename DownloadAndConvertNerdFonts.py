@@ -130,7 +130,7 @@ def process_family(family_name, asset, output_root):
 			print(f"⚠️  No .ttf or .otf font found in {asset['name']}")
 			return
 
-		print(f"🔣 {len(ttf_files)} font(s) to convert for {family_name}")
+		print(f"🔣 {len(ttf_files)} font{'s' if len(ttf_files) != 1 else ''} to convert for {family_name}")
 
 		for ttf_path in ttf_files:
 			woff2_path = convert_to_woff2(ttf_path = ttf_path, output_dir = family_output_dir)
