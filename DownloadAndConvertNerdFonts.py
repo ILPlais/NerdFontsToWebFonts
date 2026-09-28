@@ -96,7 +96,7 @@ def download_and_extract(asset, destination_dir):
 	extracted_files = []
 	with zipfile.ZipFile(io.BytesIO(archive_bytes)) as archive:
 		for member in archive.namelist():
-			if member.lower().endswith(".ttf"):
+			if member.lower().endswith((".ttf", ".otf")):
 				archive.extract(member, path = destination_dir)
 				extracted_files.append(destination_dir / member)
 
@@ -105,7 +105,7 @@ def download_and_extract(asset, destination_dir):
 
 def convert_to_woff2(ttf_path, output_dir):
 	"""
-	Convert a .ttf file to .woff2 with fontTools, and write the result
+	Convert a .ttf or .otf file to .woff2 with fontTools, and write the result
 	into `output_dir` while keeping the original file stem.
 	"""
 	woff2_path = output_dir / f"{ttf_path.stem}.woff2"
@@ -115,7 +115,7 @@ def convert_to_woff2(ttf_path, output_dir):
 
 def process_family(family_name, asset, output_root):
 	"""
-	Download, extract, then convert every .ttf font in a given family.
+	Download, extract, then convert every .ttf or .otf font in a given family.
 	WOFF2 files go into a subdirectory named after the family;
 	intermediate .ttf files are not kept.
 	"""
@@ -127,7 +127,7 @@ def process_family(family_name, asset, output_root):
 		ttf_files = download_and_extract(asset = asset, destination_dir = tmp_dir)
 
 		if not ttf_files:
-			print(f"⚠️  No .ttf font found in {asset['name']}")
+			print(f"⚠️  No .ttf or .otf font found in {asset['name']}")
 			return
 
 		print(f"🔣 {len(ttf_files)} font(s) to convert for {family_name}")
