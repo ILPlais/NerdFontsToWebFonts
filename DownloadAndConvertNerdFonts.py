@@ -117,7 +117,7 @@ def process_family(family_name, asset, output_root):
 	"""
 	Download, extract, then convert every .ttf or .otf font in a given family.
 	WOFF2 files go into a subdirectory named after the family;
-	intermediate .ttf files are not kept.
+	intermediate files are not kept.
 	"""
 	family_output_dir = output_root / family_name
 	family_output_dir.mkdir(parents = True, exist_ok = True)
