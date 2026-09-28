@@ -92,7 +92,7 @@ jobs:
       - name: 📦 Install fontTools (with WOFF2/Brotli support)
         run: pip install "fonttools[woff]"
 
-      - name: 🔤 Download and convert all families
+      - name: 🔁 Download and convert all families
         # The script is expected to be at the root of the repository
         run: |
           python3 DownloadAndConvertNerdFonts.py \
