@@ -95,7 +95,7 @@ jobs:
       - name: 🔤 Download and convert all families
         # The script is expected to be at the root of the repository
         run: |
-          python3 download_and_convert_nerd_fonts.py \
+          python3 DownloadAndConvertNerdFonts.py \
             --tag "$NERD_FONTS_TAG" \
             --output-dir ./woff2
 
