@@ -1,5 +1,7 @@
 # NerdFontsToWebFonts
 
+[![🔣 Nerd Fonts → WOFF2](https://github.com/ILPlais/NerdFontsToWebFonts/actions/workflows/nerd-fonts-woff2-release.yml/badge.svg)](https://github.com/ILPlais/NerdFontsToWebFonts/actions/workflows/nerd-fonts-woff2-release.yml)
+
 Convert the [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts) TTF and OTF files to WOFF2.
 
 ## Installation
