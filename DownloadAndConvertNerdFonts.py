@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-download_and_convert_nerd_fonts.py
+DownloadAndConvertNerdFonts.py
 
 Download font families from the official Nerd Fonts repository
 (https://github.com/ryanoasis/nerd-fonts) and convert their .ttf files
@@ -12,16 +12,16 @@ Single dependency (downloads use urllib from the standard library):
 
 Examples:
 	# List available families in the latest release
-	python3 download_and_convert_nerd_fonts.py --list-families
+	python3 DownloadAndConvertNerdFonts.py --list-families
 
 	# Download and convert two specific families
-	python3 download_and_convert_nerd_fonts.py --families JetBrainsMono FiraCode --output-dir ./fonts
+	python3 DownloadAndConvertNerdFonts.py --families JetBrainsMono FiraCode --output-dir ./fonts
 
 	# Target a specific version instead of the latest release
-	python3 download_and_convert_nerd_fonts.py --tag v3.5.1 --families Hack
+	python3 DownloadAndConvertNerdFonts.py --tag v3.5.1 --families Hack
 
 	# Download and convert everything (this can take a while!)
-	python3 download_and_convert_nerd_fonts.py --output-dir ./fonts
+	python3 DownloadAndConvertNerdFonts.py --output-dir ./fonts
 """
 
 import argparse
